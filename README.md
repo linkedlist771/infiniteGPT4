@@ -16,8 +16,10 @@
 
 - Apple ID 注册：[【2023最新】美区 Apple ID 注册申请教程！在国内也可以轻松注册一个美国 Apple ID、无需信用卡申请美区苹果ID账号、超简单找到付款方式 None 选项｜数字牧民LC - YouTube](https://www.youtube.com/watch?v=Y51VMx4NOfk)
 - ChatGPT 充值：[支付宝可以给美国 App Store 充钱了！无需信用卡直接购买美区 Apple ID、Google Play、Spotify、Hulu礼品卡｜数字牧民LC - YouTube](https://www.youtube.com/watch?v=W3chc223K-w)
+-  ChatGPT注册教程：[【2023年6月最新】ChatGPT 注册教程！一次成功、使用官方 ChatGPT APP 注册 ChatGPT 账号100%成功！ 在国内也能轻松注册 ChatGPT 和 OpenAI｜数字牧民LC - YouTube](https://www.youtube.com/watch?v=ASSbhyl1XBI)
 
 ### 自制教程：
 
 - 礼品卡充值链接：https://shop.pockyt.io/    礼品卡充值视频教程： https://v.douyin.com/UyQLSvd/
 - apple ID 注册链接：https://bit.ly/3M4dPMq
+
