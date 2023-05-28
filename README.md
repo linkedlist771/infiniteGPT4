@@ -1,4 +1,7 @@
 # infiniteGPT4
+[中文](README.md) | [English](README_eng.md)
+
+
 基于revChatGPT和IOS新推出的无限次GPT4使用实现GPT4无限次数使用的API。
 **目前openai封号潮， 现在使用可能账号被封， 不知道插件是否造成影响。**
 
