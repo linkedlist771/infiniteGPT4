@@ -8,59 +8,153 @@
 // @version      4
 // @grant        none
 // ==/UserScript==
+
 (function() {
     'use strict';
-    /*
-    无限使用的模型：gpt-4-mobile
-    联网模型：gpt-4-browsing
-    */
-    let isScriptEnabled = localStorage.getItem('isScriptEnabled') ? true : false;
-
-    function toggleScript() {
-        isScriptEnabled = !isScriptEnabled;
-        localStorage.setItem('isScriptEnabled', isScriptEnabled);
-        toggleButton.textContent = isScriptEnabled ? '停止无限GPT-4插件' : '启动无限GPT-4插件';
-        if(isScriptEnabled && !localStorage.getItem('alertShown')){
-            alert("有人在使用插件后，出现封号退款的情况，是不是由于插件导致的不清楚，酌情使用哦。");
-            localStorage.setItem('alertShown', true);
-        }
-    }
-
-    let toggleButton = document.createElement('button');
-    toggleButton.style.position = 'fixed';
-    toggleButton.style.top = '50%';  // 控制按钮的纵向位置
-    toggleButton.style.left = '20%';  // 控制按钮的横向位置
-    toggleButton.style.transform = 'translateX(-50%)';
-    toggleButton.style.backgroundColor = 'red';
-    toggleButton.style.color = 'white';
-    toggleButton.style.fontSize = '20px';
-    toggleButton.style.padding = '10px 20px';
-    toggleButton.style.border = 'none';
-    toggleButton.style.borderRadius = '5px';
-    toggleButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.25)';
-    toggleButton.textContent = isScriptEnabled ? '停止无限GPT-4插件' : '启动无限GPT-4插件';
-
-    toggleButton.onclick = toggleScript;
-
-    document.body.appendChild(toggleButton);
-
-    let realFetch = window.fetch;
-    window.fetch = function(url, init) {
-        if (!isScriptEnabled) {
-            return realFetch(url, init);
-        }
-        try {
-            if (init && init.method === 'POST') {
-                let data = JSON.parse(init.body);
-                if (data.hasOwnProperty('model')&& (!data.model.includes('gpt-4'))) {
-                    data.model = 'gpt-4-mobile';
-                    init.body = JSON.stringify(data);
+    // add mobile GPT-4
+// 将代码插入到网页中
+    const script = document.createElement('script');
+    script.textContent = `
+            const responseHandlers = {
+        'https://chat.openai.com/backend-api/models': async function(response) {
+            const body = await response.clone().json();
+            models = [
+                {
+                    "category": "gpt_4",
+                    "human_category_name": "GPT-4 Mobile",
+                    "subscription_level": "plus",
+                    "default_model": "gpt-4-mobile"
+                },
+                {
+                    "category": "gpt_3.5",
+                    "human_category_name": "GPT-3 Mobile",
+                    "subscription_level": "free",
+                    "default_model": "text-davinci-002-render-sha-mobile"
                 }
-            }
-            return realFetch(url, init);
-        } catch (e) {
-            console.error('在处理请求时出现错误:', e);
-            return realFetch(url, init);
+            ]
+
+            models.forEach(model => {
+              body.categories.push(model);
+            });
+
+            return new Response(JSON.stringify(body), {
+                status: response.status,
+                statusText: response.statusText,
+                headers: {'Content-Type': 'application/json'}
+            });
+        },
+
+        'https://chat.openai.com/backend-api/moderations': async function(response) {
+            const body = await response.clone().json();
+            body.flagged = false;
+            body.blocked = false;
+
+            return new Response(JSON.stringify(body), {
+                status: response.status,
+                statusText: response.statusText,
+                headers: {'Content-Type': 'application/json'}
+            });
         }
     };
+    window.fetch = new Proxy(window.fetch, {
+        apply: async function(target, thisArg, argumentsList) {
+            const response = await Reflect.apply(...arguments);
+            for (let key in responseHandlers) {
+                if (argumentsList[0].includes(key)) {
+                    return responseHandlers[key](response);
+                }
+            }
+            return response;
+        }
+    });
+    `;
+    document.body.appendChild(script);
+
+
+   // set default
+    const BUTTONS_GROUPS = ['GPT-3.5', 'GPT-4','GPT-4 Mobile', 'GTP-3.5 Mobile']
+    const DEFAULT_BUTTON = 'GPT-4 Mobile'
+    let menus = []
+    let isSwitch = false;
+
+    // 注册脚本菜单
+    const registerMenuCommand = () => {
+      const onHandle = (value) => {
+        GM_setValue('defaultModel', value)
+        registerMenuCommand()
+      }
+      if (!GM_getValue('defaultModel')) GM_setValue('defaultModel', DEFAULT_BUTTON)
+      const defaultValue = GM_getValue('defaultModel')
+      menus.forEach(menu => GM_unregisterMenuCommand(menu))
+      menus = BUTTONS_GROUPS.map((buttonText) => GM_registerMenuCommand(`切换默认为：${buttonText}${defaultValue === buttonText ? '（当前）' : ''}`, () => onHandle(buttonText)))
+    }
+
+    const checkButton = (addedNode) => {
+      const model = `${GM_getValue('defaultModel')}`
+      if (addedNode.nodeType === Node.ELEMENT_NODE) {
+        const buttons = addedNode.querySelectorAll('button');
+        for (let button of buttons) {
+          if (button.textContent === model) {
+            button.querySelector('span')?.click();
+            button.querySelector('span')?.click();
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    const handleClick = () => {
+      isSwitch = true;
+    }
+
+    // 监听newChat事件
+    const addEventTargetA = () => {
+      const buttons = document.querySelectorAll('a')
+      for (const button of buttons) {
+        if (button.textContent === 'New chat') {
+          button.removeEventListener('click', handleClick)
+          button.addEventListener('click', handleClick)
+          break;
+        }
+      }
+    }
+
+    const callback = (mutationRecords) => {
+      for (const mutationRecord of mutationRecords) {
+        if (mutationRecord.addedNodes.length) {
+          for (const addedNode of mutationRecord.addedNodes) {
+            if (checkButton(addedNode)) return;
+          }
+        }
+      }
+      addEventTargetA()
+    };
+    registerMenuCommand()
+    addEventTargetA();
+    const observer = new MutationObserver(callback);
+    observer.observe(document.getElementById('__next'), {
+      childList: true,
+      subtree: true,
+    });
+
+    // 修改pushStatus和replaceStatus
+    const pushState = window.history.pushState;
+    const replaceState = window.history.replaceState;
+    window.history.pushState = function () {
+      if (isSwitch) {
+        setTimeout(() => checkButton(document.getElementById('__next')), 300)
+      }
+      pushState.apply(this, arguments);
+      isSwitch = false
+    }
+    window.history.replaceState = function () {
+      if (isSwitch) {
+        setTimeout(() => checkButton(document.getElementById('__next')), 300)
+      }
+      replaceState.apply(this, arguments);
+      isSwitch = false
+    }
+
 })();
+
